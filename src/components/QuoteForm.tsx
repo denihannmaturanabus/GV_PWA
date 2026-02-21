@@ -426,22 +426,24 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
 
   return (
     <div className="max-w-md mx-auto p-4 pb-32 space-y-6">
-      <header className="flex items-center gap-4">
-        <button 
-          onClick={onBack}
-          className="bg-white p-2 rounded-xl border border-stone-200 shadow-sm active:bg-stone-50"
-        >
-          <ArrowLeft className="w-6 h-6 text-stone-600" />
-        </button>
-        <h1 className="text-2xl font-bold tracking-tight text-brand-primary">
-          {isEditing ? 'Editar Cotización' : isDuplicating ? 'Duplicar Cotización' : 'Nueva Cotización'}
-        </h1>
+      <header className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-3xl shadow-lg">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onBack}
+            className="bg-white/20 backdrop-blur-sm p-2 rounded-xl border border-white/30 shadow-sm active:bg-white/30 transition-all hover:bg-white/25"
+          >
+            <ArrowLeft className="w-6 h-6 text-white" />
+          </button>
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            {isEditing ? 'Editar Cotización' : isDuplicating ? 'Duplicar Cotización' : 'Nueva Cotización'}
+          </h1>
+        </div>
       </header>
 
       {/* Sección Cliente */}
-      <section className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+      <section className="bg-white p-4 rounded-2xl shadow-sm border-2 border-stone-300 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">
             Cliente {isDuplicating && <span className="text-brand-accent ml-2">(Selecciona un nuevo cliente)</span>}
           </h2>
           <button 
@@ -463,21 +465,21 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
               <input 
                 type="text" 
                 placeholder="Nombre Completo" 
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none"
+                className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none text-stone-900"
                 value={newClient.nombre}
                 onChange={e => setNewClient({...newClient, nombre: e.target.value})}
               />
               <input 
                 type="text" 
                 placeholder="Teléfono (Opcional)" 
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none"
+                className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none text-stone-900"
                 value={newClient.telefono || ''}
                 onChange={e => setNewClient({...newClient, telefono: e.target.value})}
               />
               <input 
                 type="text" 
                 placeholder="Dirección (Opcional)" 
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none"
+                className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none text-stone-900"
                 value={newClient.direccion || ''}
                 onChange={e => setNewClient({...newClient, direccion: e.target.value})}
               />
@@ -491,7 +493,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
           ) : (
             <div className="relative">
               <select 
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl appearance-none focus:ring-2 focus:ring-brand-accent outline-none"
+                className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl appearance-none focus:ring-2 focus:ring-brand-accent outline-none text-stone-900 font-medium"
                 value={selectedClienteId}
                 onChange={e => setSelectedClienteId(e.target.value)}
               >
@@ -507,12 +509,12 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
       </section>
 
       {/* Nombre del Proyecto */}
-      <section className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">Descripción del Proyecto</h2>
+      <section className="bg-white p-4 rounded-2xl shadow-sm border-2 border-stone-300 space-y-3">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Descripción del Proyecto</h2>
         <input 
           type="text" 
           placeholder="Ej: Ampliación de segundo piso, Remodelación baño, etc."
-          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none"
+          className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none text-stone-900"
           value={nombreProyecto}
           onChange={e => setNombreProyecto(e.target.value)}
         />
@@ -521,8 +523,8 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
       {/* Sección Items */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">Trabajos / Materiales</h2>
-          <span className="text-xs text-stone-400">{items.length} ítems</span>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Trabajos / Materiales</h2>
+          <span className="text-xs font-semibold text-stone-600">{items.length} ítems</span>
         </div>
 
         <div className="space-y-4">
@@ -532,7 +534,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
               key={item.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 space-y-3 relative"
+              className="bg-white p-4 rounded-2xl shadow-sm border-2 border-stone-300 space-y-3 relative"
             >
               <button 
                 onClick={() => handleRemoveItem(item.id)}
@@ -544,32 +546,32 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
               <input 
                 type="text" 
                 placeholder="Ítem" 
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl outline-none focus:border-brand-accent"
+                className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl outline-none focus:border-brand-accent text-stone-900"
                 value={item.descripcion}
                 onChange={e => handleItemChange(item.id, 'descripcion', e.target.value)}
               />
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Cantidad</label>
+                  <label className="text-[10px] uppercase font-black text-stone-600 ml-1">Cantidad</label>
                   <input 
                     type="number" 
-                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl outline-none"
+                    className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl outline-none text-stone-900 font-semibold"
                     value={item.cantidad}
                     onChange={e => handleItemChange(item.id, 'cantidad', parseFloat(e.target.value) || 0)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Precio Unit.</label>
+                  <label className="text-[10px] uppercase font-black text-stone-600 ml-1">Precio Unit.</label>
                   <input 
                     type="number" 
-                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl outline-none font-mono"
+                    className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl outline-none font-mono text-stone-900 font-semibold"
                     value={item.precio_unitario}
                     onChange={e => handleItemChange(item.id, 'precio_unitario', parseFloat(e.target.value) || 0)}
                   />
                 </div>
               </div>
-              <div className="text-right text-sm font-bold text-stone-600">
+              <div className="text-right text-sm font-bold text-stone-800">
                 Subtotal: {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(item.subtotal)}
               </div>
             </motion.div>
@@ -578,27 +580,27 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
 
         <button 
           onClick={handleAddItem}
-          className="w-full py-4 border-2 border-dashed border-stone-300 rounded-2xl text-stone-400 flex items-center justify-center gap-2 font-medium active:bg-stone-100 transition-colors"
+          className="w-full py-4 border-2 border-dashed border-stone-400 rounded-2xl text-stone-600 flex items-center justify-center gap-2 font-bold active:bg-stone-100 transition-colors"
         >
           <Plus className="w-5 h-5" /> Añadir Ítem
         </button>
       </section>
 
       {/* Observaciones */}
-      <section className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">Observaciones</h2>
+      <section className="bg-white p-4 rounded-2xl shadow-sm border-2 border-stone-300 space-y-3">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Observaciones</h2>
         <textarea 
           placeholder="Condiciones de pago, plazos, etc."
           rows={3}
-          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl outline-none resize-none"
+          className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl outline-none resize-none text-stone-900"
           value={observaciones}
           onChange={e => setObservaciones(e.target.value)}
         />
         <div className="flex items-center gap-3">
-          <label className="text-sm text-stone-500 whitespace-nowrap">Validez (días):</label>
+          <label className="text-sm font-semibold text-stone-700 whitespace-nowrap">Validez (días):</label>
           <input 
             type="number" 
-            className="w-20 p-2 bg-stone-50 border border-stone-200 rounded-lg outline-none"
+            className="w-20 p-2 bg-stone-50 border-2 border-stone-300 rounded-lg outline-none text-stone-900 font-semibold"
             value={validez}
             onChange={e => setValidez(parseInt(e.target.value) || 0)}
           />
@@ -606,10 +608,10 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
       </section>
 
       {/* Footer Fijo con Total y Botones */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 p-4 pb-6 safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-stone-300 p-4 pb-6 safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-40">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-[10px] uppercase font-bold text-stone-400">Total Cotización</p>
+            <p className="text-[10px] uppercase font-black text-stone-600">Total Cotización</p>
             <p className="text-xl font-black text-brand-primary">{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(total)}</p>
           </div>
           <button 

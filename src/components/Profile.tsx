@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Upload, Building2, Phone, MapPin, Briefcase, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Building2, Phone, MapPin, Briefcase, FileText, Image as ImageIcon, AlertCircle, LogOut } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
 import { PerfilEmpresa } from '../types';
 import { motion } from 'motion/react';
 
 interface ProfileProps {
   onBack: () => void;
+  onLogout?: () => void;
 }
 
-export const Profile = ({ onBack }: ProfileProps) => {
+export const Profile = ({ onBack, onLogout }: ProfileProps) => {
   const [perfil, setPerfil] = useState<PerfilEmpresa>({
     id: '',
     nombre_empresa: 'Constructor Integral',
@@ -167,14 +168,16 @@ export const Profile = ({ onBack }: ProfileProps) => {
 
   return (
     <div className="max-w-md mx-auto p-4 pb-32 space-y-6">
-      <header className="flex items-center gap-4">
-        <button 
-          onClick={onBack}
-          className="bg-white p-2 rounded-xl border border-stone-200 shadow-sm active:bg-stone-50"
-        >
-          <ArrowLeft className="w-6 h-6 text-stone-600" />
-        </button>
-        <h1 className="text-2xl font-bold tracking-tight text-brand-primary">Mi Perfil</h1>
+      <header className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-3xl shadow-lg">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onBack}
+            className="bg-white/20 backdrop-blur-sm p-2 rounded-xl border border-white/30 shadow-sm active:bg-white/30 transition-all hover:bg-white/25"
+          >
+            <ArrowLeft className="w-6 h-6 text-white" />
+          </button>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Mi Perfil</h1>
+        </div>
       </header>
 
       {!import.meta.env.VITE_SUPABASE_URL ? (
@@ -190,10 +193,10 @@ export const Profile = ({ onBack }: ProfileProps) => {
       ) : (
         <>
           {/* Logo Section */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+          <section className="bg-white p-6 rounded-2xl shadow-sm border-2 border-stone-300 space-y-4">
             <div className="flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-brand-accent" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">Logo de la Empresa</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Logo de la Empresa</h2>
             </div>
             
             <div className="flex flex-col items-center gap-4">
@@ -217,82 +220,104 @@ export const Profile = ({ onBack }: ProfileProps) => {
                   onChange={handleLogoChange}
                 />
               </label>
-              <p className="text-xs text-stone-400 text-center">
+              <p className="text-xs font-semibold text-stone-600 text-center">
                 Formatos: JPG, PNG, SVG. Máx 2MB
               </p>
             </div>
           </section>
 
           {/* Company Info */}
-          <section className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+          <section className="bg-white p-4 rounded-2xl shadow-sm border-2 border-stone-300 space-y-4">
             <div className="flex items-center gap-2">
               <Building2 className="w-5 h-5 text-brand-accent" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">Datos de la Empresa</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Datos de la Empresa</h2>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-stone-400 uppercase ml-1">Nombre de la Empresa</label>
+                <label className="text-xs font-black text-stone-600 uppercase ml-1">Nombre de la Empresa</label>
                 <input 
                   type="text"
                   placeholder="Constructor Integral"
-                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1"
+                  className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1 text-stone-900"
                   value={perfil.nombre_empresa}
                   onChange={e => setPerfil({...perfil, nombre_empresa: e.target.value})}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-stone-400 uppercase ml-1">RUT de la Empresa</label>
+                <label className="text-xs font-black text-stone-600 uppercase ml-1">RUT de la Empresa</label>
                 <input 
                   type="text"
                   placeholder="12.345.678-9"
-                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1"
+                  className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1 text-stone-900"
                   value={perfil.rut_empresa || ''}
                   onChange={e => setPerfil({...perfil, rut_empresa: e.target.value})}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-stone-400 uppercase ml-1 flex items-center gap-1">
+                <label className="text-xs font-black text-stone-600 uppercase ml-1 flex items-center gap-1">
                   <Phone className="w-3 h-3" /> Teléfono
                 </label>
                 <input 
                   type="text"
                   placeholder="+56 9 XXXX XXXX"
-                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1"
+                  className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1 text-stone-900"
                   value={perfil.telefono}
                   onChange={e => setPerfil({...perfil, telefono: e.target.value})}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-stone-400 uppercase ml-1 flex items-center gap-1">
+                <label className="text-xs font-black text-stone-600 uppercase ml-1 flex items-center gap-1">
                   <MapPin className="w-3 h-3" /> Dirección
                 </label>
                 <input 
                   type="text"
                   placeholder="Ciudad, Región, País"
-                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1"
+                  className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none mt-1 text-stone-900"
                   value={perfil.direccion || ''}
                   onChange={e => setPerfil({...perfil, direccion: e.target.value})}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-stone-400 uppercase ml-1 flex items-center gap-1">
+                <label className="text-xs font-black text-stone-600 uppercase ml-1 flex items-center gap-1">
                   <Briefcase className="w-3 h-3" /> Giro / Servicios
                 </label>
                 <textarea 
                   placeholder="Construcción | Estructuras | Electricidad"
                   rows={2}
-                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none resize-none mt-1"
+                  className="w-full p-3 bg-stone-50 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none resize-none mt-1 text-stone-900"
                   value={perfil.giro}
                   onChange={e => setPerfil({...perfil, giro: e.target.value})}
                 />
               </div>
             </div>
           </section>
+
+          {/* Logout Section */}
+          {onLogout && (
+            <section className="bg-white p-6 rounded-2xl shadow-sm border-2 border-red-300 space-y-4">
+              <div className="flex items-center gap-2">
+                <LogOut className="w-5 h-5 text-red-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Sesión</h2>
+              </div>
+              
+              <button
+                onClick={() => {
+                  if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                    onLogout();
+                  }
+                }}
+                className="w-full bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 font-bold py-3 px-4 rounded-xl border-2 border-red-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                Cerrar Sesión
+              </button>
+            </section>
+          )}
 
           {/* Save Button */}
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 p-4 pb-6 shadow-lg z-40">

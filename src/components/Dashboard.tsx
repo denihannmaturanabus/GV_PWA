@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, FileText, Plus, ChevronRight, Phone, MapPin, Calendar, Clock, AlertTriangle, Settings, Edit, Trash2, Eye, PhoneCall, X, Copy, MoreVertical } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Users, FileText, Plus, ChevronRight, Phone, MapPin, Calendar, Clock, AlertTriangle, Settings, Edit, Trash2, Eye, PhoneCall, X, Copy, MoreVertical, Search, ArrowUpDown } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
 import { Cliente, Cotizacion } from '../types';
 import { format } from 'date-fns';
@@ -24,6 +24,8 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
   const [showEditClient, setShowEditClient] = useState(false);
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [showQuoteMenu, setShowQuoteMenu] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   useEffect(() => {
     fetchData();
@@ -75,6 +77,49 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
       currency: 'CLP',
     }).format(value);
   };
+
+  // Filtrar y ordenar cotizaciones
+  const filteredAndSortedQuotes = useMemo(() => {
+    let filtered = quotes;
+    
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = quotes.filter(quote => 
+        quote.cliente?.nombre?.toLowerCase().includes(term) ||
+        quote.nombre?.toLowerCase().includes(term) ||
+        quote.numero_cotizacion?.toString().includes(term)
+      );
+    }
+    
+    // Ordenar por fecha
+    return [...filtered].sort((a, b) => {
+      const dateA = new Date(a.fecha).getTime();
+      const dateB = new Date(b.fecha).getTime();
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+  }, [quotes, searchTerm, sortOrder]);
+
+  // Filtrar y ordenar clientes
+  const filteredAndSortedClients = useMemo(() => {
+    let filtered = clients;
+    
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = clients.filter(client =>
+        client.nombre?.toLowerCase().includes(term) ||
+        client.email?.toLowerCase().includes(term) ||
+        client.telefono?.includes(term) ||
+        client.rut?.toLowerCase().includes(term)
+      );
+    }
+    
+    // Ordenar alfabéticamente
+    return [...filtered].sort((a, b) => 
+      a.nombre.localeCompare(b.nombre)
+    );
+  }, [clients, searchTerm]);
 
   const handleViewClientQuotes = async (client: Cliente) => {
     setSelectedClient(client);
@@ -160,18 +205,20 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
 
   return (
     <div className="max-w-md mx-auto p-4 pb-24 space-y-6">
-      <header className="space-y-1 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-brand-primary tracking-tight">Panel de Control</h1>
-          <p className="text-stone-500 text-sm">Bienvenido, Constructor Integral</p>
+      <header className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-3xl shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black text-white tracking-tight">Panel de Control</h1>
+            <p className="text-amber-50 text-sm">Bienvenido Gonzalo</p>
+          </div>
+          <button 
+            onClick={onProfile}
+            className="bg-white/20 backdrop-blur-sm p-3 rounded-xl border border-white/30 shadow-sm active:bg-white/30 transition-all hover:bg-white/25"
+            title="Mi Perfil"
+          >
+            <Settings className="w-6 h-6 text-white" />
+          </button>
         </div>
-        <button 
-          onClick={onProfile}
-          className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm active:bg-stone-50 transition-colors"
-          title="Mi Perfil"
-        >
-          <Settings className="w-6 h-6 text-stone-600" />
-        </button>
       </header>
 
       {/* Stats Quick View */}
@@ -208,6 +255,32 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
         </button>
       </div>
 
+      {/* Búsqueda y Ordenamiento */}
+      <div className="flex gap-2">
+        <div className="flex-1 relative">
+          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={activeTab === 'quotes' ? 'Buscar cotización...' : 'Buscar cliente...'}
+            className="w-full pl-9 pr-3 py-2 border-2 border-stone-300 rounded-xl focus:outline-none focus:border-brand-accent text-sm"
+          />
+        </div>
+        {activeTab === 'quotes' && (
+          <button
+            onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+            className="bg-white border-2 border-stone-300 p-2 rounded-xl hover:bg-stone-50 active:bg-stone-100 transition-colors flex items-center gap-2"
+            title={sortOrder === 'newest' ? 'Más reciente primero' : 'Más antiguo primero'}
+          >
+            <ArrowUpDown className="w-4 h-4 text-stone-600" />
+            <span className="text-xs font-semibold text-stone-600">
+              {sortOrder === 'newest' ? 'Nuevas' : 'Antiguas'}
+            </span>
+          </button>
+        )}
+      </div>
+
       {/* List Content */}
       <div className="space-y-3">
         {!import.meta.env.VITE_SUPABASE_URL ? (
@@ -225,13 +298,13 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
         ) : loading ? (
           <div className="text-center py-12 text-stone-400">Cargando datos...</div>
         ) : activeTab === 'quotes' ? (
-          quotes.length > 0 ? (
-            quotes.map((quote) => (
+          filteredAndSortedQuotes.length > 0 ? (
+            filteredAndSortedQuotes.map((quote) => (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={quote.id}
-                className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm relative"
+                className="bg-white p-4 rounded-2xl border-2 border-stone-300 shadow-sm relative"
               >
                 <div className="flex items-start justify-between">
                   <div className="space-y-1 flex-1" onClick={() => onEditQuote(quote)} style={{ cursor: 'pointer' }}>
@@ -297,17 +370,17 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
             ))
           ) : (
             <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-stone-300 text-stone-400">
-              No hay cotizaciones aún
+              {searchTerm ? 'No se encontraron cotizaciones' : 'No hay cotizaciones aún'}
             </div>
           )
         ) : (
-          clients.length > 0 ? (
-            clients.map((client) => (
+          filteredAndSortedClients.length > 0 ? (
+            filteredAndSortedClients.map((client) => (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={client.id}
-                className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm"
+                className="bg-white p-4 rounded-2xl border-2 border-stone-300 shadow-sm"
               >
                 <div className="space-y-3">
                   <div className="space-y-1">
@@ -375,7 +448,7 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
             ))
           ) : (
             <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-stone-300 text-stone-400">
-              No hay clientes registrados
+              {searchTerm ? 'No se encontraron clientes' : 'No hay clientes registrados'}
             </div>
           )
         )}
@@ -416,29 +489,82 @@ export const Dashboard = ({ onNewQuote, onProfile, onEditQuote, onDuplicateQuote
                   clientQuotes.map((quote) => (
                     <div
                       key={quote.id}
-                      className="p-4 bg-stone-50 rounded-xl border border-stone-200"
+                      className="p-4 bg-stone-50 rounded-xl border border-stone-200 relative"
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold bg-white px-2 py-1 rounded border border-stone-200">
-                            N° {quote.numero_cotizacion}
-                          </span>
-                          {quote.estado === 'borrador' && (
-                            <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-                              Borrador
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1" onClick={() => {
+                          onEditQuote(quote);
+                          setShowClientQuotes(false);
+                        }} style={{ cursor: 'pointer' }}>
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold bg-white px-2 py-1 rounded border border-stone-200">
+                                N° {quote.numero_cotizacion}
+                              </span>
+                              {quote.estado === 'borrador' && (
+                                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                                  Borrador
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-stone-400">
+                              {format(new Date(quote.fecha), 'dd/MM/yy')}
                             </span>
+                          </div>
+                          {quote.nombre && (
+                            <p className="text-sm text-stone-600 mb-1">{quote.nombre}</p>
                           )}
+                          <p className="text-lg font-black text-brand-accent">
+                            {formatCurrency(quote.total)}
+                          </p>
                         </div>
-                        <span className="text-xs text-stone-400">
-                          {format(new Date(quote.fecha), 'dd/MM/yy')}
-                        </span>
+                        
+                        <div className="relative ml-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowQuoteMenu(showQuoteMenu === quote.id ? null : quote.id);
+                            }}
+                            className="p-2 rounded-lg hover:bg-white active:bg-stone-100 transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5 text-stone-400" />
+                          </button>
+                          
+                          <AnimatePresence>
+                            {showQuoteMenu === quote.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                className="absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-stone-200 py-2 z-10 min-w-[160px]"
+                              >
+                                <button
+                                  onClick={() => {
+                                    onEditQuote(quote);
+                                    setShowQuoteMenu(null);
+                                    setShowClientQuotes(false);
+                                  }}
+                                  className="w-full px-4 py-2 text-left hover:bg-stone-50 flex items-center gap-2 text-sm"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    onDuplicateQuote(quote);
+                                    setShowQuoteMenu(null);
+                                    setShowClientQuotes(false);
+                                  }}
+                                  className="w-full px-4 py-2 text-left hover:bg-stone-50 flex items-center gap-2 text-sm"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                  Duplicar
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
-                      {quote.nombre && (
-                        <p className="text-sm text-stone-600 mb-1">{quote.nombre}</p>
-                      )}
-                      <p className="text-lg font-black text-brand-accent">
-                        {formatCurrency(quote.total)}
-                      </p>
                     </div>
                   ))
                 ) : (
