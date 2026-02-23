@@ -425,6 +425,121 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
     }
   };
 
+  const handleShare = async () => {
+    if (!selectedClienteId) {
+      alert('Por favor selecciona un cliente');
+      return;
+    }
+
+    try {
+      const client = getSupabase();
+      if (!client) {
+        alert('Error: Supabase no está configurado.');
+        return;
+      }
+
+      const quoteData = getCurrentQuoteData();
+      const cliente = quoteData.cliente;
+
+      const today = new Date();
+      const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+      const fechaLocal = localDate.toISOString().split('T')[0];
+
+      let cotizacionId = editingQuoteId;
+      let numeroQuote;
+
+      if (isEditing && editingQuoteId) {
+        // Actualizar cotización existente
+        const { data: quoteResult, error: quoteError } = await client
+          .from('cotizaciones')
+          .update({
+            cliente_id: quoteData.cliente_id,
+            nombre: quoteData.nombre,
+            total: quoteData.total,
+            validez_dias: quoteData.validez_dias,
+            observaciones: quoteData.observaciones,
+            estado: 'pendiente',
+            fecha: fechaLocal
+          })
+          .eq('id', editingQuoteId)
+          .select();
+
+        if (quoteError) throw quoteError;
+        numeroQuote = quoteResult[0].numero_cotizacion;
+
+        await client.from('items_cotizacion').delete().eq('cotizacion_id', editingQuoteId);
+      } else {
+        // Nueva cotización
+        const { data: quoteResult, error: quoteError } = await client
+          .from('cotizaciones')
+          .insert([{
+            cliente_id: quoteData.cliente_id,
+            nombre: quoteData.nombre,
+            total: quoteData.total,
+            validez_dias: quoteData.validez_dias,
+            observaciones: quoteData.observaciones,
+            estado: 'pendiente',
+            fecha: fechaLocal
+          }])
+          .select();
+
+        if (quoteError) throw quoteError;
+        cotizacionId = quoteResult[0].id;
+        numeroQuote = quoteResult[0].numero_cotizacion;
+      }
+
+      // Guardar Items
+      const itemsToInsert = items.map(item => ({
+        cotizacion_id: cotizacionId,
+        descripcion: item.descripcion,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        subtotal: item.subtotal
+      }));
+
+      await client.from('items_cotizacion').insert(itemsToInsert);
+
+      // Generar PDF Blob
+      const blob = await pdf(<QuotePDF quote={{ ...quoteData, numero_cotizacion: numeroQuote }} perfil={perfil || undefined} />).toBlob();
+      
+      // Subir a Storage
+      const fileName = `cotizacion_${numeroQuote}.pdf`;
+      const { data: uploadData, error: uploadError } = await client.storage
+        .from('cotizaciones')
+        .upload(fileName, blob, {
+          upsert: true
+        });
+
+      let publicUrl = '';
+      if (!uploadError) {
+        const { data: urlData } = client.storage.from('cotizaciones').getPublicUrl(fileName);
+        publicUrl = urlData.publicUrl;
+      }
+
+      // Usar Web Share API nativa
+      if (navigator.share) {
+        const shareText = `Cotización #${numeroQuote}\n\nCliente: ${cliente?.nombre}\nTotal: ${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(total)}\n\nVer detalle: ${publicUrl}`;
+        
+        await navigator.share({
+          title: `Cotización #${numeroQuote}`,
+          text: shareText,
+          url: publicUrl
+        });
+      } else {
+        // Fallback si no hay Web Share API
+        alert('Tu navegador no soporta la función de compartir. Usa el botón de WhatsApp directo.');
+      }
+
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Usuario canceló el compartir, no hacer nada
+        return;
+      }
+      console.error('Error sharing quote:', error);
+      alert('Hubo un error al compartir.');
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto p-4 pb-64 space-y-6 min-h-screen">
       <header className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-3xl shadow-lg">
@@ -634,17 +749,23 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
                 <><Save className="w-5 h-5" /> Guardar Borrador</>
             )}
           </button>
-          <button 
-            onClick={handleSaveAndShare}
-            disabled={isSaving}
-            className="w-full bg-brand-accent text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-accent/20 active:scale-95 transition-transform disabled:opacity-50"
-          >
-            {isSaving ? 'Guardando...' : (
-              isEditing ? 
-                <><Send className="w-5 h-5" /> Actualizar y Enviar</> : 
-                <><Send className="w-5 h-5" /> Enviar WhatsApp</>
-            )}
-          </button>
+          <div className="grid grid-cols-2 gap-3">
+            <button 
+              onClick={handleShare}
+              className="bg-blue-500 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg"
+            >
+              <FileText className="w-5 h-5" /> Compartir
+            </button>
+            <button 
+              onClick={handleSaveAndShare}
+              disabled={isSaving}
+              className="bg-brand-accent text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-accent/20 active:scale-95 transition-transform disabled:opacity-50"
+            >
+              {isSaving ? 'Enviando...' : (
+                <><Send className="w-5 h-5" /> WhatsApp</>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
