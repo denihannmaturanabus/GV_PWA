@@ -516,18 +516,57 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
         publicUrl = urlData.publicUrl;
       }
 
-      // Usar Web Share API nativa
+      // Intentar compartir usando Web Share API
       if (navigator.share) {
-        const shareText = `Cotización #${numeroQuote}\n\nCliente: ${cliente?.nombre}\nTotal: ${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(total)}\n\nVer detalle: ${publicUrl}`;
-        
-        await navigator.share({
-          title: `Cotización #${numeroQuote}`,
-          text: shareText,
-          url: publicUrl
-        });
+        try {
+          // Crear archivo PDF para compartir
+          const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+          const shareText = `Cotización #${numeroQuote}\n\nCliente: ${cliente?.nombre}\nTotal: ${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(total)}`;
+          
+          // Verificar si puede compartir archivos
+          if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+            // Compartir con archivo PDF
+            await navigator.share({
+              title: `Cotización #${numeroQuote}`,
+              text: shareText,
+              files: [pdfFile]
+            });
+          } else {
+            // Compartir solo texto y URL
+            await navigator.share({
+              title: `Cotización #${numeroQuote}`,
+              text: shareText + `\n\nVer PDF: ${publicUrl}`,
+              url: publicUrl
+            });
+          }
+        } catch (shareError: any) {
+          // Si falla compartir, ofrecer descargar
+          if (shareError.name !== 'AbortError') {
+            // Descargar el PDF
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('PDF descargado. Puedes compartirlo desde tu galería/descargas.');
+          }
+        }
       } else {
-        // Fallback si no hay Web Share API
-        alert('Tu navegador no soporta la función de compartir. Usa el botón de WhatsApp directo.');
+        // Fallback: Descargar el archivo
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('PDF descargado. Puedes compartirlo desde tu galería/descargas.');
       }
 
     } catch (error) {
@@ -536,7 +575,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
         return;
       }
       console.error('Error sharing quote:', error);
-      alert('Hubo un error al compartir.');
+      alert('Hubo un error al compartir: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   };
 
