@@ -414,7 +414,8 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
       const message = `Hola ${cliente?.nombre}, adjunto la cotización por los trabajos conversados. %0A%0ATotal: ${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(total)} %0A%0APuedes ver el detalle aquí: ${publicUrl || 'Generado localmente'}`;
       const whatsappUrl = `https://wa.me/${cliente?.telefono?.replace(/\+/g, '')}?text=${message}`;
       
-      window.open(whatsappUrl, '_blank');
+      // Usar window.location para mejor compatibilidad en Android
+      window.location.href = whatsappUrl;
 
     } catch (error) {
       console.error('Error saving quote:', error);
@@ -425,7 +426,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 pb-32 space-y-6">
+    <div className="max-w-md mx-auto p-4 pb-64 space-y-6 min-h-screen">
       <header className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-3xl shadow-lg">
         <div className="flex items-center gap-4">
           <button 
