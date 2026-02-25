@@ -3,9 +3,10 @@ import { Plus, Trash2, Save, Send, UserPlus, Search, FileText, Eye, X, ArrowLeft
 import { v4 as uuidv4 } from 'uuid';
 import { Cliente, ItemCotizacion, Cotizacion, PerfilEmpresa } from '../types';
 import { getSupabase } from '../lib/supabase';
-import { pdf, PDFViewer } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { QuotePDF } from './QuotePDF';
 import { motion, AnimatePresence } from 'motion/react';
+import { Toast, useToast } from './Toast';
 
 interface QuoteFormProps {
   onBack: () => void;
@@ -42,6 +43,9 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
   const [esTotalManual, setEsTotalManual] = useState(false);
   const [valorTotalManual, setValorTotalManual] = useState(0);
   const [modoCliente, setModoCliente] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  
+  const { toasts, closeToast, success, error, info } = useToast();
 
   useEffect(() => {
     fetchClientes();
@@ -201,22 +205,22 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
 
   const handleCreateClient = async () => {
     if (!newClient.nombre) {
-      alert('El nombre del cliente es obligatorio.');
+      error('El nombre del cliente es obligatorio.');
       return;
     }
     
     try {
       const client = getSupabase();
       if (!client) {
-        alert('Configuración de Supabase no encontrada. Revisa los Secrets.');
+        error('Configuración de Supabase no encontrada. Revisa los Secrets.');
         return;
       }
 
-      const { data, error } = await client.from('clientes').insert([newClient]).select();
+      const { data, error: dbError } = await client.from('clientes').insert([newClient]).select();
       
-      if (error) {
-        console.error('Error de Supabase:', error);
-        alert('Error al guardar cliente: ' + error.message);
+      if (dbError) {
+        console.error('Error de Supabase:', dbError);
+        error('Error al guardar cliente: ' + dbError.message);
         return;
       }
 
@@ -231,16 +235,17 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
           direccion: '',
           email: '' 
         });
+        success('Cliente guardado exitosamente');
       }
     } catch (e) {
       console.error('Error inesperado:', e);
-      alert('Error técnico al intentar guardar el cliente.');
+      error('Error técnico al intentar guardar el cliente.');
     }
   };
 
   const handleSaveDraft = async () => {
     if (!selectedClienteId) {
-      alert('Por favor selecciona un cliente para guardar el borrador');
+      error('Por favor selecciona un cliente para guardar el borrador');
       return;
     }
 
@@ -248,7 +253,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
     try {
       const client = getSupabase();
       if (!client) {
-        alert('Error: Supabase no está configurado.');
+        error('Error: Supabase no está configurado.');
         setIsSavingDraft(false);
         return;
       }
@@ -308,12 +313,12 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
 
       await client.from('items_cotizacion').insert(itemsToInsert);
 
-      alert('Borrador guardado exitosamente');
-      onBack();
+      success('Borrador guardado exitosamente');
+      setTimeout(() => onBack(), 1500);
 
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      alert('Hubo un error al guardar el borrador.');
+    } catch (err) {
+      console.error('Error saving draft:', err);
+      error('Hubo un error al guardar el borrador.');
     } finally {
       setIsSavingDraft(false);
     }
@@ -321,7 +326,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
 
   const handleSaveAndShare = async () => {
     if (!selectedClienteId) {
-      alert('Por favor selecciona un cliente');
+      error('Por favor selecciona un cliente');
       return;
     }
 
@@ -329,7 +334,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
     try {
       const client = getSupabase();
       if (!client) {
-        alert('Error: Supabase no está configurado.');
+        error('Error: Supabase no está configurado.');
         setIsSaving(false);
         return;
       }
@@ -414,16 +419,17 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
         publicUrl = urlData.publicUrl;
       }
 
-      // 5. WhatsApp
+      // 5. WhatsApp - Usar window.open para no cerrar la PWA
       const message = `Hola ${cliente?.nombre}, adjunto la cotización por los trabajos conversados. %0A%0ATotal: ${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(total)} %0A%0APuedes ver el detalle aquí: ${publicUrl || 'Generado localmente'}`;
       const whatsappUrl = `https://wa.me/${cliente?.telefono?.replace(/\+/g, '')}?text=${message}`;
       
-      // Usar window.location para mejor compatibilidad en Android
-      window.location.href = whatsappUrl;
+      // Abrir WhatsApp en nueva ventana para evitar cerrar la PWA en Android
+      window.open(whatsappUrl, '_blank');
+      success('Cotización guardada y enviada a WhatsApp');
 
-    } catch (error) {
-      console.error('Error saving quote:', error);
-      alert('Hubo un error al guardar. Asegúrate de configurar Supabase correctamente.');
+    } catch (err) {
+      console.error('Error saving quote:', err);
+      error('Hubo un error al guardar. Asegúrate de configurar Supabase correctamente.');
     } finally {
       setIsSaving(false);
     }
@@ -431,14 +437,14 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
 
   const handleShare = async () => {
     if (!selectedClienteId) {
-      alert('Por favor selecciona un cliente');
+      error('Por favor selecciona un cliente');
       return;
     }
 
     try {
       const client = getSupabase();
       if (!client) {
-        alert('Error: Supabase no está configurado.');
+        error('Error: Supabase no está configurado.');
         return;
       }
 
@@ -556,7 +562,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert('PDF descargado. Puedes compartirlo desde tu galería/descargas.');
+            success('PDF descargado. Puedes compartirlo desde tu galería/descargas.');
           }
         }
       } else {
@@ -570,21 +576,64 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        alert('PDF descargado. Puedes compartirlo desde tu galería/descargas.');
+        success('PDF descargado. Puedes compartirlo desde tu galería/descargas.');
       }
 
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
         // Usuario canceló el compartir, no hacer nada
         return;
       }
-      console.error('Error sharing quote:', error);
-      alert('Hubo un error al compartir: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      console.error('Error sharing quote:', err);
+      error('Hubo un error al compartir: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
+  const handlePreview = async () => {
+    try {
+      // Limpiar Blob URL anterior si existe
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+
+      // Generar PDF Blob
+      const quoteData = getCurrentQuoteData();
+      const blob = await pdf(<QuotePDF quote={quoteData} perfil={perfil || undefined} mostrarPrecios={!modoCliente} />).toBlob();
+      
+      // Crear Blob URL
+      const url = URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+      setShowPreview(true);
+    } catch (err) {
+      console.error('Error generating preview:', err);
+      error('Error al generar la vista previa del PDF');
+    }
+  };
+
+  const handleClosePreview = () => {
+    setShowPreview(false);
+    // Limpiar Blob URL después de un pequeño delay para que la animación termine
+    setTimeout(() => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+        setPdfBlobUrl(null);
+      }
+    }, 300);
+  };
+
+  // Cleanup del Blob URL al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+    };
+  }, [pdfBlobUrl]);
+
   return (
     <div className="max-w-md mx-auto p-4 pb-64 space-y-6 min-h-screen">
+      <Toast toasts={toasts} onClose={closeToast} />
+      
       <header className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-3xl shadow-lg">
         <div className="flex items-center gap-4">
           <button 
@@ -837,7 +886,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
             <p className="text-xl font-black text-brand-primary">{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(total)}</p>
           </div>
           <button 
-            onClick={() => setShowPreview(true)}
+            onClick={handlePreview}
             className="bg-stone-100 text-stone-600 p-3 rounded-xl font-bold flex items-center gap-2 active:bg-stone-200"
           >
             <Eye className="w-5 h-5" /> Previsualizar
@@ -877,29 +926,32 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
 
       {/* Modal de Previsualización */}
       <AnimatePresence>
-        {showPreview && (
+        {showPreview && pdfBlobUrl && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 z-50 flex flex-col"
+            className="fixed inset-0 bg-black/90 z-50 flex flex-col"
           >
-            <div className="p-4 flex items-center justify-between text-white">
-              <h3 className="font-bold">Vista Previa PDF</h3>
+            <div className="p-4 flex items-center justify-between text-white bg-black/50 backdrop-blur-sm">
+              <h3 className="font-bold text-lg">Vista Previa PDF</h3>
               <button 
-                onClick={() => setShowPreview(false)}
-                className="bg-white/10 p-2 rounded-full"
+                onClick={handleClosePreview}
+                className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors"
+                aria-label="Cerrar"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="flex-1 bg-white m-2 rounded-xl overflow-hidden">
-              <PDFViewer width="100%" height="100%" showToolbar={false} className="border-none">
-                <QuotePDF quote={getCurrentQuoteData()} perfil={perfil || undefined} mostrarPrecios={!modoCliente} />
-              </PDFViewer>
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={pdfBlobUrl}
+                className="w-full h-full border-none"
+                title="Vista previa de cotización"
+              />
             </div>
-            <div className="p-4 text-center text-white/60 text-xs">
-              Desliza para ver el documento completo
+            <div className="p-3 text-center text-white/60 text-xs bg-black/50">
+              Usa los controles del visor para navegar el documento
             </div>
           </motion.div>
         )}

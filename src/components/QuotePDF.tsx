@@ -178,7 +178,6 @@ export const QuotePDF = ({ quote, perfil, mostrarPrecios = true }: { quote: Coti
           <Text style={styles.quoteTitle}>COTIZACIÓN</Text>
           <Text>N°: {quote.numero_cotizacion || '---'}</Text>
           <Text>Fecha: {format(new Date(quote.fecha), 'dd/MM/yyyy')}</Text>
-          <Text>Válida por: {quote.validez_dias} días</Text>
         </View>
       </View>
 
