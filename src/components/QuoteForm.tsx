@@ -39,6 +39,9 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
   const [isEditing, setIsEditing] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [esTotalManual, setEsTotalManual] = useState(false);
+  const [valorTotalManual, setValorTotalManual] = useState(0);
+  const [modoCliente, setModoCliente] = useState(false);
 
   useEffect(() => {
     fetchClientes();
@@ -175,7 +178,8 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
     setItems(newItems);
   };
 
-  const total = items.reduce((acc, item) => acc + item.subtotal, 0);
+  const totalCalculado = items.reduce((acc, item) => acc + item.subtotal, 0);
+  const total = esTotalManual ? valorTotalManual : totalCalculado;
 
   const getCurrentQuoteData = (): Cotizacion => {
     const cliente = clientes.find(c => c.id === selectedClienteId);
@@ -394,7 +398,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
       await client.from('items_cotizacion').insert(itemsToInsert);
 
       // 3. Generar PDF Blob
-      const blob = await pdf(<QuotePDF quote={{ ...quoteData, numero_cotizacion: numeroQuote }} perfil={perfil || undefined} />).toBlob();
+      const blob = await pdf(<QuotePDF quote={{ ...quoteData, numero_cotizacion: numeroQuote }} perfil={perfil || undefined} mostrarPrecios={!modoCliente} />).toBlob();
       
       // 4. Subir a Storage
       const fileName = `cotizacion_${numeroQuote}.pdf`;
@@ -500,7 +504,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
       await client.from('items_cotizacion').insert(itemsToInsert);
 
       // Generar PDF Blob
-      const blob = await pdf(<QuotePDF quote={{ ...quoteData, numero_cotizacion: numeroQuote }} perfil={perfil || undefined} />).toBlob();
+      const blob = await pdf(<QuotePDF quote={{ ...quoteData, numero_cotizacion: numeroQuote }} perfil={perfil || undefined} mostrarPrecios={!modoCliente} />).toBlob();
       
       // Subir a Storage
       const fileName = `cotizacion_${numeroQuote}.pdf`;
@@ -762,6 +766,69 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
         </div>
       </section>
 
+      {/* Control de Total Manual */}
+      <section className="bg-white p-4 rounded-2xl shadow-sm border-2 border-stone-300 space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-bold uppercase tracking-wider text-stone-700 flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox"
+              checked={esTotalManual}
+              onChange={e => {
+                setEsTotalManual(e.target.checked);
+                if (e.target.checked && valorTotalManual === 0) {
+                  setValorTotalManual(totalCalculado);
+                }
+              }}
+              className="w-5 h-5 rounded border-2 border-stone-300 text-brand-accent focus:ring-2 focus:ring-brand-accent cursor-pointer"
+            />
+            Definir precio total manualmente
+          </label>
+        </div>
+        
+        <AnimatePresence>
+          {esTotalManual && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-2"
+            >
+              <label className="text-xs uppercase font-black text-stone-600 ml-1">Precio Total</label>
+              <input 
+                type="number" 
+                className="w-full p-3 bg-amber-50 border-2 border-amber-400 rounded-xl outline-none text-stone-900 font-bold text-lg"
+                value={valorTotalManual}
+                onChange={e => setValorTotalManual(parseFloat(e.target.value) || 0)}
+                placeholder="Ingrese el precio total"
+              />
+              <p className="text-xs text-stone-500 ml-1">
+                Total calculado: {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(totalCalculado)}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      {/* Modo Cliente (Ocultar precios en PDF) */}
+      <section className="bg-white p-4 rounded-2xl shadow-sm border-2 border-stone-300">
+        <label className="flex items-center justify-between cursor-pointer">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">Ocultar precios unitarios en PDF</h3>
+            <p className="text-xs text-stone-500">Solo mostrará descripciones y el total final</p>
+          </div>
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={modoCliente}
+              onChange={e => setModoCliente(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-14 h-8 bg-stone-300 rounded-full peer peer-checked:bg-brand-accent transition-colors"></div>
+            <div className="absolute left-1 top-1 w-6 h-6 bg-white rounded-full transition-transform peer-checked:translate-x-6 shadow-md"></div>
+          </div>
+        </label>
+      </section>
+
       {/* Footer Fijo con Total y Botones */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-stone-300 p-4 pb-6 safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-40">
         <div className="flex items-center justify-between mb-4">
@@ -828,7 +895,7 @@ export const QuoteForm = ({ onBack, editingQuote, duplicatingQuote }: QuoteFormP
             </div>
             <div className="flex-1 bg-white m-2 rounded-xl overflow-hidden">
               <PDFViewer width="100%" height="100%" showToolbar={false} className="border-none">
-                <QuotePDF quote={getCurrentQuoteData()} perfil={perfil || undefined} />
+                <QuotePDF quote={getCurrentQuoteData()} perfil={perfil || undefined} mostrarPrecios={!modoCliente} />
               </PDFViewer>
             </div>
             <div className="p-4 text-center text-white/60 text-xs">

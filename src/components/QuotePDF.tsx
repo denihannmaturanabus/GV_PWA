@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   colDesc: { width: '60%' },
+  colDescFull: { width: '90%' },
   colQty: { width: '10%', textAlign: 'center' },
   colPrice: { width: '15%', textAlign: 'right' },
   colTotal: { width: '15%', textAlign: 'right' },
@@ -145,7 +146,7 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-export const QuotePDF = ({ quote, perfil }: { quote: Cotizacion; perfil?: PerfilEmpresa }) => {
+export const QuotePDF = ({ quote, perfil, mostrarPrecios = true }: { quote: Cotizacion; perfil?: PerfilEmpresa; mostrarPrecios?: boolean }) => {
   const companyName = perfil?.nombre_empresa || 'CONSTRUCTOR INTEGRAL';
   const companyAddress = perfil?.direccion || 'Villarrica - Ñancul, Chile';
   const companyGiro = perfil?.giro || 'Construcción | Estructuras | Electricidad';
@@ -201,17 +202,27 @@ export const QuotePDF = ({ quote, perfil }: { quote: Cotizacion; perfil?: Perfil
       {/* Table */}
       <View style={styles.table}>
         <View style={styles.tableHeader}>
-          <Text style={styles.colDesc}>Descripción</Text>
-          <Text style={styles.colQty}>Cant.</Text>
-          <Text style={styles.colPrice}>Unitario</Text>
-          <Text style={styles.colTotal}>Subtotal</Text>
+          <Text style={mostrarPrecios ? styles.colDesc : styles.colDescFull}>Descripción</Text>
+          {mostrarPrecios && (
+            <>
+              <Text style={styles.colQty}>Cant.</Text>
+              <Text style={styles.colPrice}>Unitario</Text>
+              <Text style={styles.colTotal}>Subtotal</Text>
+            </>
+          )}
+          {!mostrarPrecios && <Text style={styles.colQty}>Cant.</Text>}
         </View>
         {quote.items.map((item, index) => (
           <View key={index} style={styles.tableRow}>
-            <Text style={styles.colDesc}>{item.descripcion}</Text>
-            <Text style={styles.colQty}>{item.cantidad}</Text>
-            <Text style={styles.colPrice}>{formatCurrency(item.precio_unitario)}</Text>
-            <Text style={styles.colTotal}>{formatCurrency(item.subtotal)}</Text>
+            <Text style={mostrarPrecios ? styles.colDesc : styles.colDescFull}>{item.descripcion}</Text>
+            {mostrarPrecios && (
+              <>
+                <Text style={styles.colQty}>{item.cantidad}</Text>
+                <Text style={styles.colPrice}>{formatCurrency(item.precio_unitario)}</Text>
+                <Text style={styles.colTotal}>{formatCurrency(item.subtotal)}</Text>
+              </>
+            )}
+            {!mostrarPrecios && <Text style={styles.colQty}>{item.cantidad}</Text>}
           </View>
         ))}
       </View>
